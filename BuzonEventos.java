@@ -1,18 +1,38 @@
 import java.util.*;
-
+//Clase
 public class BuzonEventos {
 
+
+    //Parametros
     private Queue<Evento> cola = new LinkedList<>();
-    //FALTA LA ESPERA
-    public synchronized void entrar(Evento e) {
+    private int capacidad;
+
+
+    //Constructor
+    public BuzonEventos(int capacidad) {
+    this.capacidad = capacidad;
+    }
+
+
+    //Entrar
+    public synchronized boolean entrar(Evento e) {
+        if (cola.size() == capacidad) {
+            return false;
+        }
         cola.add(e);
         notifyAll();
+        return true;
     }
-    //Salir synchronized para evitar 
+
+
+    //Salir 
     public synchronized Evento salir() throws InterruptedException {
         while (cola.isEmpty()) {
             wait(); // Espera pasiva
         }
         return cola.poll();
     }
+    public synchronized boolean estaVacio() {
+    return cola.isEmpty();
+}
 }

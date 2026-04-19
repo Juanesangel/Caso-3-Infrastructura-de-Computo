@@ -1,4 +1,4 @@
-ni=3
+ni=4
 base=5
 nc=2
 ns=2

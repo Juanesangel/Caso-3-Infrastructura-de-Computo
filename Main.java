@@ -1,69 +1,69 @@
 import java.io.*;
 import java.util.*;
-
+//Clase
 public class Main {
 
+
+    //Metodo main
     public static void main(String[] args) {
 
-        // 🔹 1. Leer archivo
-        String ruta = (args.length > 0)
-                ? args[0]
-                : "C:\\Users\\juane\\OneDrive\\Desktop\\Universidad\\PRGRAMACION\\INFRATEC\\Caso-3-Infrastructura-de-Computo\\parametros.txt";
 
-        Map<String, Integer> config = new HashMap<>();
+        //Ruta archivo
+        String ruta = (args.length > 0) ? args[0] : "parametros.txt";
 
+
+        //Mapa ya que llave valor
+        Map<String, Integer> datos = new HashMap<>();
+
+        //Lectura archivo
         try (BufferedReader br = new BufferedReader(new FileReader(ruta))) {
-
             String linea;
             while ((linea = br.readLine()) != null) {
                 String[] partes = linea.split("=");
-                config.put(partes[0].trim(), Integer.parseInt(partes[1].trim()));
+                datos.put(partes[0].trim(), Integer.parseInt(partes[1].trim()));
             }
-
         } catch (IOException e) {
-            System.out.println("Error leyendo archivo de configuración");
+            System.out.println("Error al leer archivo");
             return;
         }
+        System.out.println("Archivo leido: " + datos);
 
-        System.out.println("CONFIG LEIDA: " + config);
 
-        // Usar config (AHORA SÍ funciona)
-        int ni = config.get("ni");
-        int base = config.get("base");
-        int nc = config.get("nc");
-        int ns = config.get("ns");
-        int tam1 = config.get("tam1");
-        int tam2 = config.get("tam2");
+        //Datos
+        int ni = datos.get("ni");
+        int base = datos.get("base");
+        int nc = datos.get("nc");
+        int ns = datos.get("ns");
+        int tam1 = datos.get("tam1");
+        int tam2 = datos.get("tam2");
 
         System.out.println("=== CONFIGURACIÓN CARGADA ===");
 
-        // 🔹 resto de tu código sigue aquí...
-        // 🔹 2. Crear buzones
-        BuzonEventos buzonEntrada = new BuzonEventos();
+        //Crear buzones
+        BuzonEventos buzonEntrada = new BuzonEventos(Integer.MAX_VALUE);
         BuzonAlertas buzonAlertas = new BuzonAlertas(Integer.MAX_VALUE);
         BuzonClasificacion buzonClasificacion = new BuzonClasificacion(tam1);
-
         List<BuzonConsolidacion> buzonesServidores = new ArrayList<>();
         for (int i = 0; i < ns; i++) {
             buzonesServidores.add(new BuzonConsolidacion(tam2));
         }
 
-        // 🔹 3. Calcular total de eventos
+        //Calculo eventos
         int totalEventos = 0;
         for (int i = 1; i <= ni; i++) {
             totalEventos += base * i;
         }
 
-        // 🔹 4. Crear hilos
+        System.out.println("TOTAL EVENTOS = " + totalEventos);
 
-        // Sensores
+        //Sensores
         List<Sensor> sensores = new ArrayList<>();
         for (int i = 1; i <= ni; i++) {
             int eventos = base * i;
             sensores.add(new Sensor(i, eventos, buzonEntrada, ns));
         }
 
-        // Broker
+        //Broker
         Broker broker = new Broker(
                 buzonEntrada,
                 buzonAlertas,
@@ -71,37 +71,38 @@ public class Main {
                 totalEventos
         );
 
-        // Administrador
+        //Administrador
         Administrador admin = new Administrador(
                 buzonAlertas,
                 buzonClasificacion,
                 nc
         );
 
+
         // Clasificadores
+        Clasificador.setActivos(nc);
         List<Clasificador> clasificadores = new ArrayList<>();
         for (int i = 0; i < nc; i++) {
             clasificadores.add(new Clasificador(
                     buzonClasificacion,
-                    buzonesServidores,
-                    nc
+                    buzonesServidores
             ));
-        }
+}
 
-        // Servidores
+        //Servidores
         List<Servidor> servidores = new ArrayList<>();
         for (int i = 0; i < ns; i++) {
             servidores.add(new Servidor(buzonesServidores.get(i)));
         }
 
-        // 🔹 5. Iniciar hilos
+        //Iniciar hilos
         sensores.forEach(Thread::start);
         broker.start();
         admin.start();
         clasificadores.forEach(Thread::start);
         servidores.forEach(Thread::start);
 
-        // 🔹 6. Esperar terminación
+        //Esperar finalización
         try {
             for (Sensor s : sensores) s.join();
             broker.join();
@@ -112,7 +113,19 @@ public class Main {
             e.printStackTrace();
         }
 
-        // 🔹 7. Fin
+        //Revisar si buzones quedan vacios
+        System.out.println("\n=== VALIDACIÓN DE BUZONES ===");
+        System.out.println("BuzonEventos vacío: " + buzonEntrada.estaVacio());
+        System.out.println("BuzonAlertas vacío: " + buzonAlertas.estaVacio());
+        System.out.println("BuzonClasificacion vacío: " + buzonClasificacion.estaVacio());
+
+        for (int i = 0; i < buzonesServidores.size(); i++) {
+            System.out.println("BuzonConsolidacion " + i + " vacío: " +
+                buzonesServidores.get(i).estaVacio());
+        }
+
+
+        //Final
         System.out.println("\n=== SISTEMA FINALIZADO ===");
     }
 }

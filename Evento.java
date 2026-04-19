@@ -1,24 +1,15 @@
 public class Evento {
-
     private String id;
     private int tipo;
-    private boolean esFin;
+    private boolean fin;
 
-    public Evento(String id, int tipo, boolean esFin) {
+    public Evento(String id, int tipo, boolean fin) {
         this.id = id;
         this.tipo = tipo;
-        this.esFin = esFin;
+        this.fin = fin;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public int getTipo() {
-        return tipo;
-    }
-
-    public boolean esFin() {
-        return esFin;
-    }
+    public String getId() { return id; }
+    public int getTipo() { return tipo; }
+    public boolean esFin() { return fin; }
 }

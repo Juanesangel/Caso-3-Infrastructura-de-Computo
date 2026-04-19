@@ -1,24 +1,18 @@
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.*;
 
-public class Buzon_eventos {
+public class BuzonEventos {
 
     private Queue<Evento> cola = new LinkedList<>();
-
-    // Productores
+    //FALTA LA ESPERA
     public synchronized void entrar(Evento e) {
         cola.add(e);
-        notifyAll(); // despierta al broker si estaba esperando
+        notifyAll();
     }
-
-    // Consumidor
+    //Salir synchronized para evitar 
     public synchronized Evento salir() throws InterruptedException {
-
         while (cola.isEmpty()) {
-            Thread.yield(); // espera si no hay eventos
+            wait(); // Espera pasiva
         }
-
         return cola.poll();
     }
 }
-

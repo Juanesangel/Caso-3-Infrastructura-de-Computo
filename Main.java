@@ -4,23 +4,30 @@ import java.util.*;
 public class Main {
 
     public static void main(String[] args) {
-        
+
+        // 🔹 1. Leer archivo
+        String ruta = (args.length > 0)
+                ? args[0]
+                : "C:\\Users\\juane\\OneDrive\\Desktop\\Universidad\\PRGRAMACION\\INFRATEC\\Caso-3-Infrastructura-de-Computo\\parametros.txt";
+
         Map<String, Integer> config = new HashMap<>();
-        try (BufferedReader br = new BufferedReader(new FileReader("config.txt"))) {
+
+        try (BufferedReader br = new BufferedReader(new FileReader(ruta))) {
 
             String linea;
             while ((linea = br.readLine()) != null) {
-
                 String[] partes = linea.split("=");
                 config.put(partes[0].trim(), Integer.parseInt(partes[1].trim()));
             }
 
         } catch (IOException e) {
-            System.out.println("Error leyendo archivo");
+            System.out.println("Error leyendo archivo de configuración");
             return;
         }
 
-        // Valores
+        System.out.println("CONFIG LEIDA: " + config);
+
+        // Usar config (AHORA SÍ funciona)
         int ni = config.get("ni");
         int base = config.get("base");
         int nc = config.get("nc");
@@ -28,40 +35,32 @@ public class Main {
         int tam1 = config.get("tam1");
         int tam2 = config.get("tam2");
 
-        System.out.println("Configuración cargada correctamente\n");
+        System.out.println("=== CONFIGURACIÓN CARGADA ===");
 
-        // Verficar los valores cargados
+        // 🔹 resto de tu código sigue aquí...
+        // 🔹 2. Crear buzones
+        BuzonEventos buzonEntrada = new BuzonEventos();
+        BuzonAlertas buzonAlertas = new BuzonAlertas(Integer.MAX_VALUE);
+        BuzonClasificacion buzonClasificacion = new BuzonClasificacion(tam1);
 
-        System.out.println("=== CONFIGURACIÓN ===");
-        System.out.println("Sensores: " + ni);
-        System.out.println("Base eventos: " + base);
-        System.out.println("Clasificadores: " + nc);
-        System.out.println("Servidores: " + ns);
-        System.out.println();
-
-        // Crear buzones
-        Buzon buzonEntrada = new Buzon(Integer.MAX_VALUE); // ilimitado
-        Buzon buzonAlertas = new Buzon(Integer.MAX_VALUE); // ilimitado
-        Buzon buzonClasificacion = new Buzon(tam1);
-
-        List<Buzon> buzonesServidores = new ArrayList<>();
+        List<BuzonConsolidacion> buzonesServidores = new ArrayList<>();
         for (int i = 0; i < ns; i++) {
-            buzonesServidores.add(new Buzon(tam2));
+            buzonesServidores.add(new BuzonConsolidacion(tam2));
         }
 
-        // Calculo para los eventos eventos
+        // 🔹 3. Calcular total de eventos
         int totalEventos = 0;
         for (int i = 1; i <= ni; i++) {
             totalEventos += base * i;
         }
 
-        //Crear hilos
+        // 🔹 4. Crear hilos
 
         // Sensores
         List<Sensor> sensores = new ArrayList<>();
         for (int i = 1; i <= ni; i++) {
             int eventos = base * i;
-            sensores.add(new Sensor(i, eventos, buzonEntrada));
+            sensores.add(new Sensor(i, eventos, buzonEntrada, ns));
         }
 
         // Broker
@@ -81,53 +80,39 @@ public class Main {
 
         // Clasificadores
         List<Clasificador> clasificadores = new ArrayList<>();
-        for (int i = 1; i <= nc; i++) {
+        for (int i = 0; i < nc; i++) {
             clasificadores.add(new Clasificador(
-                    i,
                     buzonClasificacion,
                     buzonesServidores,
-                    ns,
                     nc
             ));
         }
 
         // Servidores
         List<Servidor> servidores = new ArrayList<>();
-        for (int i = 1; i <= ns; i++) {
-            servidores.add(new Servidor(i, buzonesServidores.get(i - 1)));
+        for (int i = 0; i < ns; i++) {
+            servidores.add(new Servidor(buzonesServidores.get(i)));
         }
 
-        //Iniciar hilos
-
+        // 🔹 5. Iniciar hilos
         sensores.forEach(Thread::start);
         broker.start();
         admin.start();
         clasificadores.forEach(Thread::start);
         servidores.forEach(Thread::start);
 
-        //Esperar sensores (opcional pero limpio)
+        // 🔹 6. Esperar terminación
         try {
-            for (Sensor s : sensores) {
-                s.join();
-            }
-
+            for (Sensor s : sensores) s.join();
             broker.join();
             admin.join();
-
-            for (Clasificador c : clasificadores) {
-                c.join();
-            }
-
-            for (Servidor s : servidores) {
-                s.join();
-            }
-
+            for (Clasificador c : clasificadores) c.join();
+            for (Servidor s : servidores) s.join();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
 
-        // Fin del sistema
+        // 🔹 7. Fin
         System.out.println("\n=== SISTEMA FINALIZADO ===");
     }
 }
-    
